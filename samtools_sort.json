@@ -1,0 +1,354 @@
+{
+    "cwlVersion": "sbg:draft-2",
+    "class": "CommandLineTool",
+    "$namespaces": {
+        "sbg": "https://www.sevenbridges.com"
+    },
+    "id": "admin/sbg-public-data/samtools-sort-1-3/11",
+    "label": "Samtools sort",
+    "description": "Sort alignments by leftmost coordinates, or by read name when -n is used. An appropriate @HD-SO sort order header tag will be added or an existing one updated if necessary.\n\nThe sorted output is written to standard output by default, or to the specified file (out.bam) when -o is used. This command will also create temporary files tmpprefix.%d.bam as needed when the entire alignment data cannot fit into memory (as controlled via the -m option).\n\nCommon issues:\nFor larger files (~100-200 GB), we recommend to use sambamba sort to since it takes half the time and runs reliably on our platform.",
+    "baseCommand": [
+        "/opt/samtools-1.3/samtools",
+        "sort"
+    ],
+    "inputs": [
+        {
+            "sbg:category": "File input",
+            "type": [
+                "File"
+            ],
+            "inputBinding": {
+                "position": 0,
+                "separate": true,
+                "sbg:cmdInclude": true,
+                "secondaryFiles": []
+            },
+            "label": "Input file",
+            "description": "The input file to be sorted.",
+            "sbg:fileTypes": "BAM, CRAM, SAM",
+            "id": "#input_file"
+        },
+        {
+            "sbg:category": "execution",
+            "sbg:toolDefaultValue": "4",
+            "type": [
+                "null",
+                "int"
+            ],
+            "inputBinding": {
+                "position": 0,
+                "prefix": "-@",
+                "separate": true,
+                "sbg:cmdInclude": true
+            },
+            "label": "Threads Number",
+            "description": "Set number of sorting and compression threads. By default, operation is single-threaded.",
+            "id": "#threads"
+        },
+        {
+            "sbg:category": "configuration",
+            "sbg:stageInput": null,
+            "sbg:toolDefaultValue": "0",
+            "type": [
+                "null",
+                "int"
+            ],
+            "inputBinding": {
+                "position": 0,
+                "prefix": "-I",
+                "separate": true,
+                "sbg:cmdInclude": true
+            },
+            "label": "Compression level",
+            "description": "Set the desired compression level for the final output file, ranging from 0 (uncompressed) or 1 (fastest but minimal compression) to 9 (best compression but slowest to write), similarly to gzip(1)'s compression level setting.",
+            "id": "#compression_level"
+        },
+        {
+            "sbg:category": "configuration",
+            "sbg:stageInput": null,
+            "type": [
+                "null",
+                "boolean"
+            ],
+            "inputBinding": {
+                "position": 0,
+                "prefix": "-n",
+                "separate": true,
+                "sbg:cmdInclude": true
+            },
+            "label": "Sort by read name",
+            "description": "Sort by read names (i.e., the QNAME field) rather than by chromosomal coordinates.",
+            "id": "#sort_by_read_name"
+        },
+        {
+            "sbg:category": "configuration",
+            "type": [
+                "null",
+                {
+                    "type": "enum",
+                    "symbols": [
+                        "bam",
+                        "sam",
+                        "cram"
+                    ],
+                    "name": "output_format"
+                }
+            ],
+            "inputBinding": {
+                "position": 0,
+                "prefix": "-O",
+                "separate": true,
+                "sbg:cmdInclude": true
+            },
+            "label": "Output_format",
+            "description": "Write the final output as sam, bam, or cram.",
+            "id": "#output_format"
+        },
+        {
+            "sbg:category": "execution",
+            "sbg:toolDefaultValue": "1000",
+            "type": [
+                "null",
+                "string"
+            ],
+            "inputBinding": {
+                "position": 0,
+                "prefix": "-m",
+                "separate": true,
+                "sbg:cmdInclude": true
+            },
+            "label": "Memory per Job in MB",
+            "description": "Approximately the maximum required memory per thread, specified with a G, M, or K suffix. [768 MiB].",
+            "id": "#max_mem_per_thread"
+        },
+        {
+            "type": [
+                "null",
+                "string"
+            ],
+            "inputBinding": {
+                "position": 0,
+                "prefix": "-T",
+                "separate": true,
+                "sbg:cmdInclude": true
+            },
+            "label": "Temporary files prefix",
+            "description": "Write temporary files to PREFIX.nnnn.bam.",
+            "id": "#temporary_files_prefix"
+        }
+    ],
+    "outputs": [
+        {
+            "type": [
+                "File"
+            ],
+            "label": "Sorted file",
+            "description": "Sorted file at the output.",
+            "sbg:fileTypes": "BAM",
+            "outputBinding": {
+                "glob": {
+                    "class": "Expression",
+                    "engine": "#cwl-js-engine",
+                    "script": "{\n\n  filepath = $job.inputs.input_file.path\n  complete_filename = filepath.split(\"/\").pop();\n  complete_filename = complete_filename.split(\".\");\n  ext = complete_filename.pop();\n  complete_filename = complete_filename.join(\".\")\n  \n  if($job.inputs.output_format)\n  {\n    if($job.inputs.output_format =='bam')\n      complete_filename = complete_filename+'.sorted.'+'bam'; \n    \n    else if($job.inputs.output_format =='sam')\n\t  complete_filename = complete_filename+'.sorted.'+'sam'; \n    \n    else if($job.inputs.output_format =='cram')\n      complete_filename = complete_filename+'.sorted.'+'cram'; \n    \n    else\n      complete_filename = complete_filename +'.sorted.'+ 'bam'\n  }\n  else\n    complete_filename = complete_filename +'.sorted.'+ 'bam'\n  \n  \n  return complete_filename\n\n}"
+                },
+                "sbg:inheritMetadataFrom": "#input_file"
+            },
+            "id": "#sorted_file"
+        }
+    ],
+    "requirements": [
+        {
+            "class": "ExpressionEngineRequirement",
+            "id": "#cwl-js-engine",
+            "requirements": [
+                {
+                    "class": "DockerRequirement",
+                    "dockerPull": "rabix/js-engine"
+                }
+            ]
+        }
+    ],
+    "hints": [
+        {
+            "class": "sbg:CPURequirement",
+            "value": {
+                "class": "Expression",
+                "engine": "#cwl-js-engine",
+                "script": "{\n  if($job.inputs.threads)\n  {\n    return $job.inputs.threads\n  }\n  else\n  {\n    return 8\n  }\n}"
+            }
+        },
+        {
+            "class": "sbg:MemRequirement",
+            "value": {
+                "class": "Expression",
+                "engine": "#cwl-js-engine",
+                "script": "{\n \n  \n  if($job.inputs.max_mem_per_thread)\n  {\n    if( $job.inputs.max_mem_per_thread.indexOf(\"G\") >=0)\n   \t\ttotal_memory_MB = $job.inputs.threads * $job.inputs.max_mem_per_thread.replace('G','')*1000 +1000\n \telse if( $job.inputs.max_mem_per_thread.indexOf(\"M\") >=0)\n         total_memory_MB = $job.inputs.threads * $job.inputs.max_mem_per_thread.replace('M','') +1000\n \telse if(( $job.inputs.max_mem_per_thread.indexOf(\"K\") >=0))\n         total_memory_MB = $job.inputs.threads * $job.inputs.max_mem_per_thread.replace('K','')/1000 +1000\n\n  }\n  else\n  {\n    total_memory_MB = 1024 * 2\n  }\n  \n  return(total_memory_MB)\n}"
+            }
+        },
+        {
+            "class": "DockerRequirement",
+            "dockerPull": "images.sbgenomics.com/marouf/samtools:1.3"
+        }
+    ],
+    "arguments": [
+        {
+            "position": 0,
+            "prefix": "-o",
+            "separate": true,
+            "valueFrom": {
+                "class": "Expression",
+                "engine": "#cwl-js-engine",
+                "script": "{\n\n  filepath = $job.inputs.input_file.path\n  complete_filename = filepath.split(\"/\").pop();\n  complete_filename = complete_filename.split(\".\");\n  ext = complete_filename.pop();\n  complete_filename = complete_filename.join(\".\")\n  \n  if($job.inputs.output_format)\n  {\n    if($job.inputs.output_format =='bam')\n      complete_filename = complete_filename+'.sorted.'+'bam'; \n    \n    else if($job.inputs.output_format =='sam')\n\t  complete_filename = complete_filename+'.sorted.'+'sam'; \n    \n    else if($job.inputs.output_format =='cram')\n      complete_filename = complete_filename+'.sorted.'+'cram'; \n    \n    else\n      complete_filename = complete_filename +'.sorted.'+ 'bam'\n  }\n  else\n    complete_filename = complete_filename +'.sorted.'+ 'bam'\n  \n  \n  return complete_filename\n\n}"
+            }
+        }
+    ],
+    "sbg:appVersion": [
+        "sbg:draft-2"
+    ],
+    "sbg:categories": [
+        "SAM/BAM-Processing"
+    ],
+    "sbg:cmdPreview": "/opt/samtools-1.3/samtools sort  input_file.123.cram -o input_file.123.sorted.sam",
+    "sbg:contributors": [
+        "admin",
+        "sevenbridges"
+    ],
+    "sbg:createdBy": "sevenbridges",
+    "sbg:createdOn": 1460640040,
+    "sbg:id": "admin/sbg-public-data/samtools-sort-1-3/11",
+    "sbg:image_url": null,
+    "sbg:job": {
+        "allocatedResources": {
+            "cpu": 3,
+            "mem": 16000
+        },
+        "inputs": {
+            "compression_level": 5,
+            "input_file": {
+                "class": "File",
+                "path": "input_file.123.cram",
+                "secondaryFiles": [],
+                "size": 0
+            },
+            "max_mem_per_thread": "5G",
+            "output_format": "sam",
+            "sort_by_read_name": true,
+            "temporary_files_prefix": "temporary_files-string-value",
+            "threads": 3
+        }
+    },
+    "sbg:latestRevision": 11,
+    "sbg:license": "BSD License, MIT License",
+    "sbg:links": [
+        {
+            "id": "http://www.htslib.org",
+            "label": "Homepage"
+        },
+        {
+            "id": "https://github.com/samtools/",
+            "label": "Source code"
+        },
+        {
+            "id": "https://sourceforge.net/projects/samtools/files/samtools/",
+            "label": "Download"
+        },
+        {
+            "id": "http://www.ncbi.nlm.nih.gov/pubmed/19505943",
+            "label": "Publication"
+        },
+        {
+            "id": "http://www.htslib.org/doc/samtools.html",
+            "label": "Documentation"
+        },
+        {
+            "id": "http://www.htslib.org",
+            "label": "Wiki"
+        }
+    ],
+    "sbg:modifiedBy": "admin",
+    "sbg:modifiedOn": 1473947157,
+    "sbg:project": "admin/sbg-public-data",
+    "sbg:projectName": "SBG Public Data",
+    "sbg:publisher": "sbg",
+    "sbg:revision": 11,
+    "sbg:revisionNotes": "peer review",
+    "sbg:revisionsInfo": [
+        {
+            "sbg:modifiedBy": "sevenbridges",
+            "sbg:modifiedOn": 1460640040,
+            "sbg:revision": 0,
+            "sbg:revisionNotes": null
+        },
+        {
+            "sbg:modifiedBy": "sevenbridges",
+            "sbg:modifiedOn": 1460640040,
+            "sbg:revision": 1,
+            "sbg:revisionNotes": null
+        },
+        {
+            "sbg:modifiedBy": "sevenbridges",
+            "sbg:modifiedOn": 1460640040,
+            "sbg:revision": 2,
+            "sbg:revisionNotes": null
+        },
+        {
+            "sbg:modifiedBy": "sevenbridges",
+            "sbg:modifiedOn": 1460640040,
+            "sbg:revision": 3,
+            "sbg:revisionNotes": null
+        },
+        {
+            "sbg:modifiedBy": "sevenbridges",
+            "sbg:modifiedOn": 1460640040,
+            "sbg:revision": 4,
+            "sbg:revisionNotes": null
+        },
+        {
+            "sbg:modifiedBy": "sevenbridges",
+            "sbg:modifiedOn": 1462904150,
+            "sbg:revision": 5,
+            "sbg:revisionNotes": null
+        },
+        {
+            "sbg:modifiedBy": "sevenbridges",
+            "sbg:modifiedOn": 1462904150,
+            "sbg:revision": 6,
+            "sbg:revisionNotes": null
+        },
+        {
+            "sbg:modifiedBy": "admin",
+            "sbg:modifiedOn": 1469726700,
+            "sbg:revision": 7,
+            "sbg:revisionNotes": null
+        },
+        {
+            "sbg:modifiedBy": "admin",
+            "sbg:modifiedOn": 1469726701,
+            "sbg:revision": 8,
+            "sbg:revisionNotes": null
+        },
+        {
+            "sbg:modifiedBy": "admin",
+            "sbg:modifiedOn": 1471539430,
+            "sbg:revision": 9,
+            "sbg:revisionNotes": "The tool now Utilizes the tool's memory option by adding memory per job  in MB and removing total memory . So, users can define the memory for each job in MB and the total memory will be threads NO. x memory_per_job + 1000 MB"
+        },
+        {
+            "sbg:modifiedBy": "admin",
+            "sbg:modifiedOn": 1473947157,
+            "sbg:revision": 10,
+            "sbg:revisionNotes": "Peer review"
+        },
+        {
+            "sbg:modifiedBy": "admin",
+            "sbg:modifiedOn": 1473947157,
+            "sbg:revision": 11,
+            "sbg:revisionNotes": "peer review"
+        }
+    ],
+    "sbg:sbgMaintained": false,
+    "sbg:toolAuthor": "Heng Li/Sanger Institute,  Bob Handsaker/Broad Institute, James Bonfield/Sanger Institute,",
+    "sbg:toolkit": "SAMtools",
+    "sbg:toolkitVersion": "v1.3",
+    "sbg:validationErrors": []
+}
